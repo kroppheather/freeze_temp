@@ -5,26 +5,77 @@ library(lubridate)
 
 DIR <- "E:/Google Drive/research/projects/freeze_temp/resource_map_doi_10_18739_A2736M31X/resource_map_doi_10_18739_A2736M31X/data"
 #read in data
-soil <- read.csv(paste0(DIR,"/soil_temp.csv"))
+soil <- read.csv(paste0(DIR,"/soil_temp.csv"), na.strings=c("NA","NaN"))
 air <- read.csv(paste0(DIR,"/air_temp.csv"))
 siteID <- read.csv(paste0(DIR,"/siteinfo.csv"))
 vegeClass <- read.csv(paste0(DIR,"/vege_class.csv"))
 vegeID <- read.csv(paste0(DIR,"/vegeID.csv"))
 
-#check that site 44 is not included
-soil <- soil[soil$site_id != 44,]
-air <- air[air$site_id != 44,]
-#note looks like I actually removed it before
-#adding to ADC
+#focus on shallow soils
+#at or above 20 cm
+soil <- soil[soil$st_depth <= 20,]
 
 #subset for winter period
-
-
 
 #start with using water year. May need to see if freezing starts in sept
 #start with soil
 
 #get water year
+#starts oct 1
 soil$leapID <- leap_year(soil$year_st)
-soil$wyear <- ifelse( soil$leapID == TRUE & soil$doy_st >= 275, soil$year_st+1,
-                      ifelse(soil$leapID == FALSE & soil$doy_st >= 274,soil$year_st+1,soil$year_st))
+soil$wyear <- ifelse( soil$leapID == TRUE & soil$doy_st >= 275, 
+                      soil$year_st+1,
+                      ifelse(soil$leapID == FALSE & soil$doy_st >= 274,
+                             soil$year_st+1,
+                             soil$year_st))
+
+air$leapID <- leap_year(air$year_ai)
+air$wyear <- ifelse( air$leapID == TRUE & air$doy_ai >= 275, 
+                      air$year_ai+1,
+                      ifelse(air$leapID == FALSE & air$doy_ai >= 274,
+                             air$year_ai+1,
+                             air$year_ai))
+#identify days in study period
+#to have the same length of period even during leap year
+#end summer period on doy 152 (June 1 on non-leap year and May 31 leap year)
+soil$studyPeriod <- ifelse( soil$leapID == TRUE & soil$doy_st >= 275, 
+                            1,
+                            ifelse(soil$leapID == FALSE & soil$doy_st >= 274,
+                                   1,
+                            ifelse(soil$doy_st < 152,
+                                   1,0)))
+
+#subset so focusing on study period
+#and omit an NA
+soil <- na.omit(soil[soil$studyPeriod == 1,])
+
+
+#get total observations by depth, water year, and site
+soilCount <- aggregate(soil$soil_t, by=list(
+                                       wyear= soil$wyear,
+                                       st_depth= soil$st_depth,
+                                       site_id= soil$site_id),
+                       FUN="length")
+#get soil count with full period
+soilCountA <- soilCount[soilCount$x == 243,]
+#summarize number of sitexdepth with full observations
+sitesCount <- aggregate(soilCountA$x, by=list(
+                                        st_depth = soilCountA$st_depth,
+                                        site_id= soilCountA$site_id),
+                        FUN="length")
+#see how many sites at least have five years of data
+sitesLong <- sitesCount[sitesCount$x >= 5,]
+colnames(sitesLong)[3] <- "YearCount"
+#match vegetation info
+sitesList <- left_join(sitesLong, vegeClass, by="site_id")
+
+#subset soil to only contain longer sites
+soilW <- inner_join(soil,sitesList, by=c("site_id","st_depth"))
+
+#make a winter period day count
+soilW$dayID <- ifelse( soilW$leapID == TRUE & soilW$doy_st >= 275, 
+                       soilW$doy_st-274,
+                      ifelse(soilW$leapID == FALSE & soilW$doy_st >= 274,
+                             soilW$doy_st-273,
+                             soilW$doy_st+92))
+#start doy 1: is 93 days into Oct 1 period

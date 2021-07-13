@@ -1,6 +1,7 @@
 library(dplyr)
 library(lubridate)
 
+
 #use archived data on ADC
 
 DIR <- "E:/Google Drive/research/projects/freeze_temp/resource_map_doi_10_18739_A2736M31X/resource_map_doi_10_18739_A2736M31X/data"
@@ -48,6 +49,8 @@ soil$studyPeriod <- ifelse( soil$leapID == TRUE & soil$doy_st >= 275,
 #subset so focusing on study period
 #and omit an NA
 soil <- na.omit(soil[soil$studyPeriod == 1,])
+#focus on 1-10 cm in soil for now
+soil <- soil[soil$st_depth >= 1 & soil$st_depth <= 10,]
 
 
 #get total observations by depth, water year, and site
@@ -78,4 +81,22 @@ soilW$dayID <- ifelse( soilW$leapID == TRUE & soilW$doy_st >= 275,
                       ifelse(soilW$leapID == FALSE & soilW$doy_st >= 274,
                              soilW$doy_st-273,
                              soilW$doy_st+92))
-#start doy 1: is 93 days into Oct 1 period
+#put each sitexdepth into a list for easier reference for plots and calculations
+soilWList <- list()
+yearsWList <- list()
+for(i in 1:nrow(sitesList)){
+  soilWList[[i]] <- soilW[soilW$site_id == sitesList$site_id[i]&soilW$st_depth == sitesList$st_depth[i],]
+  yearsWList[[i]] <- unique(data.frame(wyear=soilWList[[i]]$wyear))
+}
+
+#start by visualizing all data
+plot(soilWList[[1]]$dayID[soilWList[[1]]$wyear == yearsWList[[1]]$wyear[11]], 
+     soilWList[[1]]$soil_t[soilWList[[1]]$wyear == yearsWList[[1]]$wyear[11]], 
+     type="l", col=rgb(0.5,0.5,0.5,0.5),
+     xlab="Day",
+     ylab="temperature (c)",
+     main=paste("SiteID",sitesList$site_id[1],"Depth",sitesList$st_depth[1]))
+
+#calculate freeze
+
+#freeze thaw cycles

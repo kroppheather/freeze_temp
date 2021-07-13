@@ -21,27 +21,29 @@ soil <- soil[soil$st_depth <= 20,]
 #start with using water year. May need to see if freezing starts in sept
 #start with soil
 
-#get water year
-#starts oct 1
+#extend the water year
+#starting on oct 1 means there are some below freezing temps
+#so need to start earlier tha traditional water year. Moving to
+#sept 1
 soil$leapID <- leap_year(soil$year_st)
-soil$wyear <- ifelse( soil$leapID == TRUE & soil$doy_st >= 275, 
+soil$wyear <- ifelse( soil$leapID == TRUE & soil$doy_st >= 245, 
                       soil$year_st+1,
-                      ifelse(soil$leapID == FALSE & soil$doy_st >= 274,
+                      ifelse(soil$leapID == FALSE & soil$doy_st >= 244,
                              soil$year_st+1,
                              soil$year_st))
 
 air$leapID <- leap_year(air$year_ai)
-air$wyear <- ifelse( air$leapID == TRUE & air$doy_ai >= 275, 
+air$wyear <- ifelse( air$leapID == TRUE & air$doy_ai >= 245, 
                       air$year_ai+1,
-                      ifelse(air$leapID == FALSE & air$doy_ai >= 274,
+                      ifelse(air$leapID == FALSE & air$doy_ai >= 244,
                              air$year_ai+1,
                              air$year_ai))
 #identify days in study period
 #to have the same length of period even during leap year
 #end summer period on doy 152 (June 1 on non-leap year and May 31 leap year)
-soil$studyPeriod <- ifelse( soil$leapID == TRUE & soil$doy_st >= 275, 
+soil$studyPeriod <- ifelse( soil$leapID == TRUE & soil$doy_st >= 245, 
                             1,
-                            ifelse(soil$leapID == FALSE & soil$doy_st >= 274,
+                            ifelse(soil$leapID == FALSE & soil$doy_st >= 244,
                                    1,
                             ifelse(soil$doy_st < 152,
                                    1,0)))
@@ -60,7 +62,8 @@ soilCount <- aggregate(soil$soil_t, by=list(
                                        site_id= soil$site_id),
                        FUN="length")
 #get soil count with full period
-soilCountA <- soilCount[soilCount$x == 243,]
+#only allow three missing
+soilCountA <- soilCount[soilCount$x >= 271,]
 #summarize number of sitexdepth with full observations
 sitesCount <- aggregate(soilCountA$x, by=list(
                                         st_depth = soilCountA$st_depth,
@@ -76,11 +79,11 @@ sitesList <- left_join(sitesLong, vegeClass, by="site_id")
 soilW <- inner_join(soil,sitesList, by=c("site_id","st_depth"))
 
 #make a winter period day count
-soilW$dayID <- ifelse( soilW$leapID == TRUE & soilW$doy_st >= 275, 
-                       soilW$doy_st-274,
-                      ifelse(soilW$leapID == FALSE & soilW$doy_st >= 274,
-                             soilW$doy_st-273,
-                             soilW$doy_st+92))
+soilW$dayID <- ifelse( soilW$leapID == TRUE & soilW$doy_st >= 245, 
+                       soilW$doy_st-244,
+                      ifelse(soilW$leapID == FALSE & soilW$doy_st >= 244,
+                             soilW$doy_st-243,
+                             soilW$doy_st+122))
 #put each sitexdepth into a list for easier reference for plots and calculations
 soilWList <- list()
 yearsWList <- list()
@@ -90,8 +93,8 @@ for(i in 1:nrow(sitesList)){
 }
 
 #start by visualizing all data
-plot(soilWList[[1]]$dayID[soilWList[[1]]$wyear == yearsWList[[1]]$wyear[11]], 
-     soilWList[[1]]$soil_t[soilWList[[1]]$wyear == yearsWList[[1]]$wyear[11]], 
+plot(soilWList[[1]]$dayID[soilWList[[1]]$wyear == yearsWList[[1]]$wyear[18]], 
+     soilWList[[1]]$soil_t[soilWList[[1]]$wyear == yearsWList[[1]]$wyear[18]], 
      type="l", col=rgb(0.5,0.5,0.5,0.5),
      xlab="Day",
      ylab="temperature (c)",

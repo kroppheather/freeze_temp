@@ -1,5 +1,6 @@
 library(dplyr)
 library(lubridate)
+library(ggplot2)
 
 
 #use archived data on ADC
@@ -87,18 +88,39 @@ soilW$dayID <- ifelse( soilW$leapID == TRUE & soilW$doy_st >= 245,
 #put each sitexdepth into a list for easier reference for plots and calculations
 soilWList <- list()
 yearsWList <- list()
+#decade colors
+#1990, 2000, 2010
+colsD <- c("#19647e25","#ffc85725","#4b3f7225")
+
 for(i in 1:nrow(sitesList)){
   soilWList[[i]] <- soilW[soilW$site_id == sitesList$site_id[i]&soilW$st_depth == sitesList$st_depth[i],]
   yearsWList[[i]] <- unique(data.frame(wyear=soilWList[[i]]$wyear))
-}
+  yearsWList[[i]]$decadeCol <-  ifelse(floor(yearsWList[[i]]/10) == 199,colsD[1],
+                                       ifelse(floor(yearsWList[[i]]/10) == 200, colsD[2],
+                                              ifelse(floor(yearsWList[[i]]/10) == 201, colsD[3],"#31393c")))
+  
+  
+  }
+
+
 
 #start by visualizing all data
-plot(soilWList[[1]]$dayID[soilWList[[1]]$wyear == yearsWList[[1]]$wyear[18]], 
-     soilWList[[1]]$soil_t[soilWList[[1]]$wyear == yearsWList[[1]]$wyear[18]], 
-     type="l", col=rgb(0.5,0.5,0.5,0.5),
-     xlab="Day",
-     ylab="temperature (c)",
-     main=paste("SiteID",sitesList$site_id[1],"Depth",sitesList$st_depth[1]))
+plot(c(0),c(0),type="n", col=rgb(0.5,0.5,0.5,0.5),
+     xlab="Day",ylim=c(-40,15),xlim=c(0,280),xaxt="n",
+     ylab="temperature (c)")
+axis(1, c(1,31,62,92,123,154,182,213,244,275),c("Sept","Oct","Nov","Dec","Jan","Feb","Mar","April","May","June"))
+
+for(i in 1:nrow(sitesList)){
+  for(k in 1:length(yearsWList[[i]]$wyear)){
+    points(soilWList[[i]]$dayID[soilWList[[i]]$wyear == yearsWList[[i]]$wyear[k]], 
+     soilWList[[i]]$soil_t[soilWList[[i]]$wyear == yearsWList[[i]]$wyear[k]], 
+     type="l", col=yearsWList[[i]]$decadeCol[k])
+  }
+}
+legend("bottomleft", c("1990s","2000s","2010s"), col=colsD,lwd=2, bty="n")
+
+#look at zero curtain period
+
 
 #calculate freeze
 

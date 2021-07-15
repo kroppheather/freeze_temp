@@ -120,8 +120,27 @@ for(i in 1:nrow(sitesList)){
 legend("bottomleft", c("1990s","2000s","2010s"), col=colsD,lwd=2, bty="n")
 
 #look at zero curtain period
+fullObs <- data.frame(dayID = rep(seq(1, 274), times=length(seq(1991,2017))),
+                      wyear = rep(seq(1991,2017), each=length(seq(1, 274))))
 
+fullSoil <- full_join(soilW, fullObs, by=c("dayID","wyear"))
 
+ggplot(data=fullSoil[fullSoil$wyear == 2000,],
+       aes(x=site_id, y=dayID,fill=soil_t) )+
+  geom_tile()+
+  scale_fill_gradient2(name = "Temperature (c)",
+                       low = "#2166ac",
+                       mid = "#d8daeb",
+                       high = "#b2182b",
+                       na.value = "white")
+ggplot(data=fullSoil[fullSoil$wyear == 2016,],
+       aes(x=site_id, y=dayID,fill=soil_t) )+
+  geom_tile()+
+  scale_fill_gradient2(name = "Temperature (c)",
+                       low = "#2166ac",
+                       mid = "#d8daeb",
+                       high = "#b2182b",
+                       na.value = "white")
 #calculate freeze
 
 #freeze thaw cycles

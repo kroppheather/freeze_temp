@@ -1,7 +1,8 @@
 library(dplyr)
 library(lubridate)
 library(ggplot2)
-
+library(sf)
+library(mapview)
 
 #use archived data on ADC
 
@@ -154,6 +155,15 @@ ggplot(data=fullSoil[fullSoil$wyear == 2016,],
                        mid = "#d8daeb",
                        high = "#b2182b",
                        na.value = "white")
+
+#examine which vegetation types have longer observation period
+siteInfo <- unique(data.frame(site_id = sitesLists1$site_id, vegeclass=sitesLists1$vegeclass))
+siteInfoA <- left_join(siteInfo, vegeID[,1:2], by="vegeclass") %>% arrange(vegeclass)
+sitesInfo <- left_join(siteInfoA, siteID, by="site_id")
+spatSite <- st_as_sf(sitesInfo, coords=c("lon","lat"), crs=4326)
+mapview(spatSite)
+#join in other coordinates
+
 #calculate freeze
 
 #freeze thaw cycles

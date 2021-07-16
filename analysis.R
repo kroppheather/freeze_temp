@@ -74,10 +74,12 @@ sitesCount <- aggregate(soilCountA$x, by=list(
 sitesLong <- sitesCount[sitesCount$x >= 5,]
 colnames(sitesLong)[3] <- "YearCount"
 #match vegetation info
-sitesList <- left_join(sitesLong, vegeClass, by="site_id")
+sitesLists1 <- left_join(sitesLong, vegeClass, by="site_id")
+#get only sites with criteria of longer obs period back into the list
+sitesList <- inner_join(soilCountA, sitesLists1,by=c("site_id","st_depth"))
 
 #subset soil to only contain longer sites
-soilW <- inner_join(soil,sitesList, by=c("site_id","st_depth"))
+soilW <- inner_join(soil,sitesList, by=c("site_id","st_depth","wyear"))
 
 #make a winter period day count
 soilW$dayID <- ifelse( soilW$leapID == TRUE & soilW$doy_st >= 245, 
@@ -92,8 +94,8 @@ yearsWList <- list()
 #1990, 2000, 2010
 colsD <- c("#19647e25","#ffc85725","#4b3f7225")
 
-for(i in 1:nrow(sitesList)){
-  soilWList[[i]] <- soilW[soilW$site_id == sitesList$site_id[i]&soilW$st_depth == sitesList$st_depth[i],]
+for(i in 1:nrow(sitesLong)){
+  soilWList[[i]] <- soilW[soilW$site_id == sitesLong$site_id[i]&soilW$st_depth == sitesLong$st_depth[i],]
   yearsWList[[i]] <- unique(data.frame(wyear=soilWList[[i]]$wyear))
   yearsWList[[i]]$decadeCol <-  ifelse(floor(yearsWList[[i]]/10) == 199,colsD[1],
                                        ifelse(floor(yearsWList[[i]]/10) == 200, colsD[2],
@@ -110,7 +112,7 @@ plot(c(0),c(0),type="n", col=rgb(0.5,0.5,0.5,0.5),
      ylab="temperature (c)")
 axis(1, c(1,31,62,92,123,154,182,213,244,275),c("Sept","Oct","Nov","Dec","Jan","Feb","Mar","April","May","June"))
 
-for(i in 1:nrow(sitesList)){
+for(i in 1:nrow(sitesLong)){
   for(k in 1:length(yearsWList[[i]]$wyear)){
     points(soilWList[[i]]$dayID[soilWList[[i]]$wyear == yearsWList[[i]]$wyear[k]], 
      soilWList[[i]]$soil_t[soilWList[[i]]$wyear == yearsWList[[i]]$wyear[k]], 
@@ -119,7 +121,18 @@ for(i in 1:nrow(sitesList)){
 }
 legend("bottomleft", c("1990s","2000s","2010s"), col=colsD,lwd=2, bty="n")
 
-#look at zero curtain period
+
+
+plot(c(0),c(0),type="n", col=rgb(0.5,0.5,0.5,0.5),
+     xlab="Day",ylim=c(-40,15),xlim=c(0,280),xaxt="n",
+     ylab="temperature (c)")
+axis(1, c(1,31,62,92,123,154,182,213,244,275),c("Sept","Oct","Nov","Dec","Jan","Feb","Mar","April","May","June"))
+for(k in 1:length(yearsWList[[1]]$wyear)){
+  points(soilWList[[1]]$dayID[soilWList[[1]]$wyear == yearsWList[[1]]$wyear[k]], 
+         soilWList[[1]]$soil_t[soilWList[[1]]$wyear == yearsWList[[1]]$wyear[k]], 
+         type="l", col=yearsWList[[1]]$decadeCol[k])
+}
+#look at full data
 fullObs <- data.frame(dayID = rep(seq(1, 274), times=length(seq(1991,2017))),
                       wyear = rep(seq(1991,2017), each=length(seq(1, 274))))
 

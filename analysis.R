@@ -88,6 +88,11 @@ soilW$dayID <- ifelse( soilW$leapID == TRUE & soilW$doy_st >= 245,
                       ifelse(soilW$leapID == FALSE & soilW$doy_st >= 244,
                              soilW$doy_st-243,
                              soilW$doy_st+122))
+
+
+###################################
+######## Plot entire data ---------
+
 #put each sitexdepth into a list for easier reference for plots and calculations
 soilWList <- list()
 yearsWList <- list()
@@ -133,6 +138,17 @@ for(k in 1:length(yearsWList[[1]]$wyear)){
          soilWList[[1]]$soil_t[soilWList[[1]]$wyear == yearsWList[[1]]$wyear[k]], 
          type="l", col=yearsWList[[1]]$decadeCol[k])
 }
+
+
+plot(c(0),c(0),type="n", col=rgb(0.5,0.5,0.5,0.5),
+     xlab="Day",ylim=c(-40,15),xlim=c(0,280),xaxt="n",
+     ylab="temperature (c)")
+axis(1, c(1,31,62,92,123,154,182,213,244,275),c("Sept","Oct","Nov","Dec","Jan","Feb","Mar","April","May","June"))
+for(k in 1:length(yearsWList[[35]]$wyear)){
+  points(soilWList[[35]]$dayID[soilWList[[35]]$wyear == yearsWList[[35]]$wyear[k]], 
+         soilWList[[35]]$soil_t[soilWList[[35]]$wyear == yearsWList[[35]]$wyear[k]], 
+         type="l", col=yearsWList[[35]]$decadeCol[k])
+}
 #look at full data
 fullObs <- data.frame(dayID = rep(seq(1, 274), times=length(seq(1991,2017))),
                       wyear = rep(seq(1991,2017), each=length(seq(1, 274))))
@@ -156,6 +172,10 @@ ggplot(data=fullSoil[fullSoil$wyear == 2016,],
                        high = "#b2182b",
                        na.value = "white")
 
+
+###################################
+######## Calculations ---------
+
 #examine which vegetation types have longer observation period
 siteInfo <- unique(data.frame(site_id = sitesLists1$site_id, vegeclass=sitesLists1$vegeclass))
 siteInfoA <- left_join(siteInfo, vegeID[,1:2], by="vegeclass") %>% arrange(vegeclass)
@@ -163,7 +183,50 @@ sitesInfo <- left_join(siteInfoA, siteID, by="site_id")
 spatSite <- st_as_sf(sitesInfo, coords=c("lon","lat"), crs=4326)
 mapview(spatSite)
 #join in other coordinates
+soilW$freeze0 <- ifelse(soilW$soil_t <= 0,1,0)
+freezeS <- soilW[soilW$freeze0 == 1,]
+#find earliest day
+
+ffDay <- freezeS %>%
+          group_by(site_id,wyear,st_depth) %>%
+          filter(dayID == min(dayID))
+
+ggplot(ffDay, aes(x=wyear, y=dayID, color=vegeclass))+
+  geom_point()
+
+
+ggplot(ffDay[ffDay$site_id == 12,], aes(x=wyear, y=dayID))+
+  geom_point()
+ggplot(ffDay[ffDay$site_id == 13,], aes(x=wyear, y=dayID))+
+  geom_point()
+ggplot(ffDay[ffDay$site_id == 39,], aes(x=wyear, y=dayID))+
+  geom_point()
+
+ggplot(ffDay[ffDay$site_id == 45,], aes(x=wyear, y=dayID))+
+  geom_point()
+
+ggplot(ffDay[ffDay$site_id == 74,], aes(x=wyear, y=dayID))+
+  geom_point()
+
+ggplot(ffDay[ffDay$site_id == 101,], aes(x=wyear, y=dayID))+
+  geom_point()
+
+ggplot(ffDay[ffDay$site_id == 105,], aes(x=wyear, y=dayID))+
+  geom_point()
+ggplot(ffDay[ffDay$site_id == 192,], aes(x=wyear, y=dayID))+
+  geom_point()
+#calculate dates of freeze
+#start with simple 0 threshold used in some papers & N factor. 
+#Will need to consider zero curtain more closely for differentiating
+#a hard freeze versus zero curtain
+
+#calculate zero curtain
+
+#not a lot of clear definition. Start within 0.5 degrees of zero
+soilW$zeroC <- ifelse(soilW$soil_t >= -0.5 & soilW$soil_t <= 0.5,1,0)
 
 #calculate freeze
 
 #freeze thaw cycles
+  
+
